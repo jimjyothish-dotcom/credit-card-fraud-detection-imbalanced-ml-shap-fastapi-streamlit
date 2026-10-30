@@ -1,0 +1,25 @@
+# Install with:
+# pip install -r requirements.txt -c constraints.txt
+# Keep this file broad and manage tested reproducibility in constraints.txt.
+
+pandas
+numpy
+scipy
+scikit-learn
+imbalanced-learn
+matplotlib
+seaborn
+xgboost
+shap
+joblib
+fastapi
+uvicorn[standard]==0.32.0
+pydantic
+streamlit==1.39.0
+python-multipart
+jupyter
+notebook
+pytest==8.3.3
+httpx==0.27.2
+mlflow
+dagshub
