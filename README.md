@@ -342,11 +342,3 @@ artifacts/
 - [ ] A/B testing framework for model rollout
 
 
----
-
-<div align="center">
-
-**Built with precision. Explained with SHAP. Deployed with confidence.**
-
-
-</div>
