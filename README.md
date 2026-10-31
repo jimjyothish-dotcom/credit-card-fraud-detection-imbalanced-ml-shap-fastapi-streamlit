@@ -341,11 +341,6 @@ artifacts/
 - [ ] Real-time inference (Kafka + Redis cache)
 - [ ] A/B testing framework for model rollout
 
----
-
-## 📄 License
-
-MIT License — free for personal and commercial use.
 
 ---
 
@@ -353,6 +348,5 @@ MIT License — free for personal and commercial use.
 
 **Built with precision. Explained with SHAP. Deployed with confidence.**
 
-*Generated with [Claude Code](https://claude.com/claude-code)*
 
 </div>
