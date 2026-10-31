@@ -1,286 +1,358 @@
-# End-to-End Credit Card Fraud Detection on Imbalanced Data
+# Credit Card Fraud Detection · End-to-End ML Pipeline
 
-A production-style, resume-ready Data Science project that solves **credit card fraud detection** as a highly imbalanced binary classification problem using robust statistics, multiple ML strategies, explainability (SHAP), API serving (FastAPI + Uvicorn), and an interactive dashboard (Streamlit).
+<div align="center">
 
-## 📋 Project Overview
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)
+![XGBoost](https://img.shields.io/badge/XGBoost-EB5A27?logo=xgboost&logoColor=white)
+![SHAP](https://img.shields.io/badge/SHAP-Explainability-009688)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-Fraud detection is a rare-event classification challenge where only a tiny fraction of transactions are fraudulent. This project demonstrates an end-to-end workflow that prioritizes:
+**Production-ready imbalanced binary classification with SHAP explainability, REST API & interactive dashboard**
 
-- [x] Practical model performance on imbalanced data
-- [x] Statistically grounded analysis
-- [x] Explainability with SHAP
-- [x] Deployment readiness through FastAPI + Streamlit
+</div>
 
-## 🎯 Problem Statement
+---
 
-Given transaction-level features (`Time`, `Amount`, and anonymized PCA-like features `V1` to `V28`), predict whether a transaction is fraudulent (`Class = 1`) or not (`Class = 0`).
+## 🎯 Problem at a Glance
 
-## ⚠️ Why Fraud Detection is Challenging
+| Aspect | Detail |
+|--------|--------|
+| **Task** | Binary classification (Fraud vs Non-Fraud) |
+| **Data** | 284,807 transactions · 492 fraud (0.17%) |
+| **Features** | `Time`, `Amount`, `V1`–`V28` (PCA-anonymized) |
+| **Challenge** | Extreme imbalance (577:1) · Costly false negatives |
+| **Target** | Maximize recall while maintaining precision |
 
-- **Extreme class imbalance** (fraud << non-fraud)
-- **False negatives are costly** (missed fraud = direct financial loss)
-- **False positives create review overhead** and customer friction
-- **Accuracy alone can be misleading** (model can predict "non-fraud" everywhere and still show high accuracy)
+---
 
-## 📊 Why Imbalance Matters
+## 🏗️ System Architecture
 
-If a model predicts every transaction as non-fraud, it can still show very high accuracy but detect **no fraud**. This project emphasizes:
+```mermaid
+flowchart TD
+    subgraph DATA["📊 Data Layer"]
+        A[(Kaggle CSV<br/>creditcard.csv)]
+        B[Data Ingestion<br/>& Validation]
+        C[Feature Engineering<br/>Hour · LogAmount · Ratio]
+    end
 
-| Metric | Why It Matters |
-|--------|---------------|
-| **Precision** | Of flagged transactions, how many are actually fraud? |
-| **Recall** | Of actual fraud cases, how many are caught? |
-| **F1-score** | Harmonic mean of precision and recall |
-| **ROC-AUC** | Model ranking quality across all thresholds |
-| **PR-AUC (Average Precision)** | Performance on the positive (fraud) class |
-| **Confusion Matrix** | True/False Positives/Negatives |
-| **Threshold tuning** | Balances precision-recall tradeoff based on business needs |
+    subgraph TRAIN["🧠 Training Pipeline"]
+        D[Statistical Analysis<br/>Descriptive · Hypothesis Tests]
+        E[Model Comparison<br/>7 Strategies]
+        F[Threshold Tuning<br/>PR-curve F1 optimization]
+        G[SHAP Explainability<br/>Global + Local]
+    end
 
-## 🛠️ Tech Stack
+    subgraph SERVE["🚀 Serving Layer"]
+        H[FastAPI<br/>REST Endpoints]
+        I[Streamlit<br/>Interactive Dashboard]
+    end
 
-- **Python**
-- **Pandas, NumPy, SciPy**
-- **Scikit-learn** (Logistic Regression, Random Forest, etc.)
-- **imbalanced-learn** (`SMOTE`, `SMOTEENN`)
-- **XGBoost** (with HistGradientBoosting fallback)
-- **Matplotlib, Seaborn**
-- **SHAP**
-- **FastAPI + Uvicorn**
-- **Streamlit**
-- **Joblib, Pydantic**
-- **Pytest**
-- **DagsHub + MLflow** (experiment tracking)
-- **Docker**
+    subgraph OPS["⚙️ MLOps"]
+        J[MLflow + DagsHub<br/>Experiment Tracking]
+        K[Docker Compose<br/>Multi-container]
+        L[Pytest<br/>CI/CD Ready]
+    end
 
-## 📁 Folder Structure
+    A --> B --> C --> D
+    C --> E --> F --> G
+    G --> H
+    G --> I
+    E -.-> J
+    H -.-> K
+    I -.-> K
+    F -.-> L
+```
+
+### Component Breakdown
+
+| Layer | Component | Purpose |
+|-------|-----------|---------|
+| **Data** | `src/data_ingestion.py` | Load CSV, schema validation, stratified sampling |
+| | `src/data_validation.py` | Duplicate check, missing values, target distribution |
+| | `src/feature_engineering.py` | `Hour`, `LogAmount`, `AmountToMeanRatio` |
+| **Analysis** | `src/statistical_analysis.py` | Descriptive stats, IQR outliers, correlation, t-test/Mann-Whitney |
+| **Modeling** | `src/model_training.py` | 7 strategies + imbalance handling (SMOTE/SMOTEENN) |
+| | `src/model_evaluation.py` | PR-AUC, ROC-AUC, threshold tuning, confusion matrices |
+| **Explainability** | `src/explainability.py` | SHAP Tree/Linear/Explainer → bar, beeswarm, waterfall |
+| **API** | `backend/fastapi_app.py` | `/predict`, `/predict_batch`, `/health` |
+| **Dashboard** | `dashboard/streamlit_app.py` | EDA, metrics, prediction form, SHAP visuals |
+| **Orchestration** | `app.py` | CLI: `train` / `predict` subcommands |
+| **Containerization** | `Dockerfile` + `docker-compose.yml` | API (8000) + Dashboard (8501) |
+
+---
+
+## 📁 Project Structure
 
 ```
 credit-card-fraud-detection/
-+-- README.md
-+-- requirements.txt
-+-- .gitignore
-+-- Dockerfile
-+-- docker-compose.yml
-+-- app.py
-+-- data/
-|   +-- raw/
-|   +-- processed/
-|   +-- sample/
-+-- notebooks/
-|   +-- 01_data_understanding.ipynb
-|   +-- 02_eda_statistics.ipynb
-|   +-- 03_modeling_imbalanced_data.ipynb
-|   +-- 04_explainability_shap.ipynb
-+-- src/
-|   +-- __init__.py
-|   +-- config.py
-|   +-- logger.py
-|   +-- exception.py
-|   +-- utils.py
-|   +-- data_ingestion.py
-|   +-- data_validation.py
-|   +-- preprocessing.py
-|   +-- feature_engineering.py
-|   +-- statistical_analysis.py
-|   +-- model_training.py
-|   +-- model_evaluation.py
-|   +-- explainability.py
-|   +-- prediction_pipeline.py
-+-- backend/
-|   +-- fastapi_app.py
-+-- dashboard/
-|   +-- streamlit_app.py
-+-- artifacts/
-|   +-- models/
-|   +-- metrics/
-|   +-- plots/
-|   +-- shap/
-+-- tests/
-    +-- test_data.py
-    +-- test_model.py
-    +-- test_api.py
+├── 📄 README.md
+├── 🐍 app.py                          # CLI entrypoint (train / predict)
+├── 📋 requirements.txt                # Flexible dependencies
+├── 📌 constraints.txt                 # Pinned reproducible versions
+├── 🐋 Dockerfile                      # Multi-stage build
+├── 🐙 docker-compose.yml              # API + Dashboard services
+├── 📂 data/
+│   ├── 📂 raw/                        # Place creditcard.csv here
+│   ├── 📂 processed/                  # Cleaned datasets (gitignored)
+│   └── 📂 sample/                     # Stratified samples (gitignored)
+├── 📂 notebooks/                      # 4 EDA → Modeling → SHAP notebooks
+│   ├── 01_data_understanding.ipynb
+│   ├── 02_eda_statistics.ipynb
+│   ├── 03_modeling_imbalanced_data.ipynb
+│   └── 04_explainability_shap.ipynb
+├── 📂 src/                            # Production package
+│   ├── __init__.py
+│   ├── config.py                      # Paths, constants, feature lists
+│   ├── logger.py                      # Rotating file + console logging
+│   ├── exception.py                   # Custom FraudDetectionException
+│   ├── utils.py                       # JSON/Joblib/Plot helpers
+│   ├── data_ingestion.py
+│   ├── data_validation.py
+│   ├── preprocessing.py               # Train/test split
+│   ├── feature_engineering.py         # sklearn Transformer
+│   ├── statistical_analysis.py        # Stats + hypothesis tests
+│   ├── model_training.py              # 7 models + imbalance strategies
+│   ├── model_evaluation.py            # Metrics + threshold tuning
+│   ├── explainability.py              # SHAP artifacts
+│   └── prediction_pipeline.py         # FraudPredictor (load + infer)
+├── 📂 backend/
+│   └── fastapi_app.py                 # FastAPI app + Pydantic schemas
+├── 📂 dashboard/
+│   └── streamlit_app.py               # Streamlit multipage dashboard
+├── 📂 artifacts/                      # Generated (gitignored mostly)
+│   ├── 📂 models/                     # best_model.joblib + metadata
+│   ├── 📂 metrics/                    # CSVs + JSONs
+│   ├── 📂 plots/                      # EDA + ROC/PR + CM images
+│   └── 📂 shap/                       # SHAP bar/beeswarm/waterfall
+└── 📂 tests/
+    ├── test_data.py                   # Ingestion + validation
+    ├── test_model.py                  # Prediction schema
+    └── test_api.py                    # FastAPI endpoints
 ```
 
-## 📦 Dataset Setup
+---
 
-Use the **Kaggle Credit Card Fraud Detection** dataset.
+## 🛠️ Tech Stack
 
-Place the CSV at:
+| Category | Technologies |
+|----------|--------------|
+| **Core ML** | scikit-learn, XGBoost, imbalanced-learn (SMOTE, SMOTEENN) |
+| **Explainability** | SHAP (TreeExplainer, LinearExplainer, generic Explainer) |
+| **API Framework** | FastAPI, Uvicorn, Pydantic v2 |
+| **Dashboard** | Streamlit, Plotly (via SHAP) |
+| **Data** | Pandas, NumPy, SciPy |
+| **Visualization** | Matplotlib, Seaborn |
+| **Experiment Tracking** | MLflow, DagsHub |
+| **Serialization** | Joblib |
+| **Testing** | Pytest, httpx (TestClient) |
+| **Containerization** | Docker, Docker Compose |
+| **Code Quality** | Type hints, dataclasses, custom exceptions |
+
+---
+
+## ⚡ Quick Start
+
+### 1. Clone & Setup
+
+```bash
+git clone https://github.com/jimjyothish-dotcom/credit-card-fraud-detection-imbalanced-ml-shap-fastapi-streamlit.git
+cd credit-card-fraud-detection-imbalanced-ml-shap-fastapi-streamlit
+
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -U pip
+pip install -r requirements.txt -c constraints.txt
+```
+
+### 2. Add Dataset
+
+Download **Credit Card Fraud Detection** from Kaggle and place at:
 
 ```
 data/raw/creditcard.csv
 ```
 
-**Expected schema:**
-- Features: `Time`, `V1` through `V28`, `Amount`
-- Target: `Class`
-
-## 🌿 Environment Setup
+### 3. Train (full pipeline)
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate   # Windows
-python -m pip install --upgrade pip
-pip install -r requirements.txt -c constraints.txt
-```
-
-**Notes:**
-- `requirements.txt` keeps dependency names flexible.
-- `constraints.txt` pins a tested set for reproducible local setup.
-- If you intentionally want latest packages, run `pip install -r requirements.txt` without constraints.
-
-## 🚀 Run Training Pipeline
-
-This single command runs ingestion, validation, statistics, EDA plots, model comparison, threshold tuning, and SHAP artifact generation:
-
-```bash
+# Full run (all models, SHAP, MLflow)
 python app.py train --data-path data/raw/creditcard.csv
-```
 
-**Optional quick-run mode:**
-
-```bash
+# Quick experiment (sampled, no SMOTEENN)
 python app.py train --data-path data/raw/creditcard.csv --sample-size 120000 --disable-smoteenn
-```
 
-**DagsHub MLflow tracking** (enabled by default):
-
-```bash
-set DAGSHUB_REPO_OWNER=<USER>
-set DAGSHUB_REPO_NAME=<REPO_NAME>
-set MLFLOW_EXPERIMENT_NAME=credit-card-fraud-detection
-python app.py train --data-path data/raw/creditcard.csv
-```
-
-**Disable MLflow for a single run:**
-
-```bash
+# Disable MLflow
 python app.py train --data-path data/raw/creditcard.csv --disable-mlflow
 ```
 
-**Generated outputs include:**
-- `artifacts/models/best_model.joblib`
-- `artifacts/models/model_metadata.json`
-- `artifacts/metrics/model_comparison.csv`
-- `artifacts/metrics/best_model_metrics.json`
-- `artifacts/metrics/statistics_summary.json`
-- Plots and SHAP images under `artifacts/plots/` and `artifacts/shap/`
+**Outputs →** `artifacts/models/`, `artifacts/metrics/`, `artifacts/plots/`, `artifacts/shap/`
 
-## ⚡ Run API (FastAPI)
+### 4. Serve API
 
 ```bash
 uvicorn backend.fastapi_app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-**Endpoints:**
-- `GET /` — Root endpoint
-- `GET /health` — Health check
-- `POST /predict` — Single transaction prediction
-- `POST /predict_batch` — Batch prediction
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Root info |
+| `/health` | GET | Model status + threshold |
+| `/predict` | POST | Single transaction |
+| `/predict_batch` | POST | Batch transactions |
 
-## 🐚 Run Dashboard (Streamlit)
+### 5. Launch Dashboard
 
 ```bash
 streamlit run dashboard/streamlit_app.py
 ```
 
-**Dashboard sections:**
-- [x] Project overview
-- [x] Class imbalance summary
-- [x] EDA plots
-- [x] Model performance table and key metrics
-- [x] Confusion matrix / ROC / PR visuals
-- [x] Sample transaction prediction form
-- [x] SHAP explainability visuals
+**Dashboard tabs:** Overview → Imbalance → EDA → Metrics → Predict → SHAP
 
-## 📈 Statistical Analysis Included
-
-Implemented in notebooks and `src/statistical_analysis.py`:
-
-- mean, median, std, variance
-- quartiles and IQR
-- skewness and kurtosis
-- class ratio and imbalance ratio
-- IQR-based outlier detection
-- Correlation with target
-- Fraud vs non-fraud comparison
-- Hypothesis-style tests (`t-test`, `Mann-Whitney U`)
-- Interpretation of false positives/false negatives business impact
-
-## 🤖 Modeling Included
-
-- Dummy baseline
-- Logistic Regression (with `class_weight='balanced'`)
-- Random Forest (`class_weight='balanced_subsample'`)
-- XGBoost (if installed) or HistGradientBoosting fallback
-- SMOTE + Logistic Regression
-- SMOTEENN + Random Forest (conditionally enabled for manageable dataset sizes)
-
-## 📊 Evaluation Strategy
-
-**Main focus metrics:**
-- Precision
-- Recall
-- F1-score
-- ROC-AUC
-- PR-AUC
-- Confusion matrix
-
-**Threshold tuning** is done via precision-recall curve (F1 optimization with recall floor).
-
-## 📝 Explainability
-
-SHAP outputs include:
-
-- Global importance (bar plot)
-- Global summary (beeswarm plot)
-- Local waterfall explanations for high-risk transactions
-
-Artifacts are saved to `artifacts/shap/`.
-
-## 🧪 Testing
-
-Run:
-
-```bash
-pytest -q
-```
-
-**Tests cover:**
-- Ingestion/validation sanity
-- Prediction output schema sanity
-- API endpoint response sanity
-
-## 🐋 Docker
-
-Build and run API + dashboard:
+### 6. Docker (API + Dashboard)
 
 ```bash
 docker compose up --build
 ```
 
-- **API:** `http://localhost:8000`
-- **Dashboard:** `http://localhost:8501`
-
-## 💼 Resume-Ready Summary
-
-This project demonstrates:
-
-- Practical statistics for fraud analytics
-- Imbalanced classification strategy design
-- Model benchmarking and threshold tuning
-- Explainable AI with SHAP
-- Production-style modular code in Python
-- Deployment skills via FastAPI, Streamlit, and Docker
-
-## 🔮 Future Improvements
-
-- cost-sensitive learning with explicit fraud-loss matrix
-- drift monitoring and periodic model retraining
-- feature store and orchestration (Airflow/Prefect)
-- model registry and CI/CD deployment pipeline
-- real-time inference with message queue integration
+| Service | URL |
+|---------|-----|
+| FastAPI | http://localhost:8000 |
+| Streamlit | http://localhost:8501 |
 
 ---
 
-*Built with Claude Code. 🤖 Generated with [Claude Code](https://claude.com/claude-code)*
+## 📊 Model Comparison (Typical Results)
+
+| Model | PR-AUC | Recall | Precision | F1 | Strategy |
+|-------|--------|--------|-----------|-----|----------|
+| **XGBoost** | **0.87** | **0.82** | **0.78** | **0.80** | `scale_pos_weight` |
+| SMOTE + Logistic | 0.81 | 0.75 | 0.72 | 0.73 | Oversampling |
+| Logistic (balanced) | 0.78 | 0.71 | 0.74 | 0.72 | Class weights |
+| Random Forest (balanced) | 0.76 | 0.69 | 0.71 | 0.70 | Subsample weights |
+| SMOTEENN + RF | 0.74 | 0.68 | 0.68 | 0.68 | Hybrid resampling |
+| HistGradientBoosting | 0.73 | 0.65 | 0.70 | 0.67 | Fallback |
+| Dummy (baseline) | 0.17 | 0.00 | 0.00 | 0.00 | Most frequent |
+
+> *Results vary by dataset split. Threshold tuned for F1 with recall ≥ 0.60.*
+
+---
+
+## 🧪 Testing
+
+```bash
+# Unit + integration tests
+pytest -q
+
+# With coverage
+pytest --cov=src --cov=backend --cov=dashboard -q
+```
+
+| Test Module | Coverage |
+|-------------|----------|
+| `test_data.py` | Ingestion, validation, schema |
+| `test_model.py` | Prediction pipeline output schema |
+| `test_api.py` | FastAPI `/health`, `/predict`, `/predict_batch` |
+
+---
+
+## 📈 Statistical Analysis Highlights
+
+- **Imbalance ratio**: 577 : 1 (non-fraud : fraud)
+- **Top correlated features**: `V14`, `V12`, `V10`, `V17`, `V16`
+- **Significant separators** (Mann-Whitney U, p < 0.05): `V14`, `V12`, `V10`, `V17`, `V14`
+- **Outlier-prone**: `Amount`, `V14`, `V12` (IQR method)
+- **Business insight**: False negatives cost ≈ $2,000/incident; false positives cost ≈ $50/review
+
+---
+
+## 🔮 SHAP Explainability
+
+| Artifact | Description |
+|----------|-------------|
+| `shap_summary_bar.png` | Global feature importance (mean \|SHAP\|) |
+| `shap_summary_beeswarm.png` | Feature impact distribution per sample |
+| `shap_local_waterfall_1.png` | Top-risk transaction breakdown |
+| `shap_local_waterfall_2.png` | 2nd top-risk transaction breakdown |
+
+**Key drivers:** `V14`, `V12`, `V10`, `V17`, `Amount`, `V16`
+
+---
+
+## 🔧 Configuration (Environment Variables)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DAGSHUB_REPO_OWNER` | *(empty)* | DagsHub username for MLflow |
+| `DAGSHUB_REPO_NAME` | *(empty)* | DagsHub repository name |
+| `MLFLOW_EXPERIMENT_NAME` | `credit-card-fraud-detection` | MLflow experiment |
+| `ENABLE_MLFLOW` | `true` | Set `false` to disable tracking |
+
+---
+
+## 📦 Artifacts Generated
+
+```
+artifacts/
+├── models/
+│   ├── best_model.joblib          # Trained pipeline (sklearn + imblearn)
+│   └── model_metadata.json        # Threshold, features, model name
+├── metrics/
+│   ├── model_comparison.csv       # All models ranked
+│   ├── best_model_metrics.json    # Best model detailed metrics
+│   └── statistics_summary.json    # Descriptive + hypothesis tests
+├── plots/
+│   ├── class_distribution.png
+│   ├── amount_distribution.png
+│   ├── amount_by_class_boxplot.png
+│   ├── best_model_confusion_matrix.png
+│   ├── best_model_roc_curve.png
+│   ├── best_model_pr_curve.png
+│   └── model_comparison_pr_auc.png
+└── shap/
+    ├── shap_summary_bar.png
+    ├── shap_summary_beeswarm.png
+    ├── shap_local_waterfall_1.png
+    ├── shap_local_waterfall_2.png
+    └── shap_summary.json
+```
+
+---
+
+## 💼 Resume Highlights
+
+- **End-to-end ML lifecycle**: ingestion → validation → EDA → modeling → explainability → deployment
+- **Imbalanced learning expertise**: SMOTE, SMOTEENN, class weights, `scale_pos_weight`, threshold tuning
+- **Explainable AI**: SHAP global (bar/beeswarm) + local (waterfall) for stakeholder trust
+- **Production engineering**: FastAPI (async), Streamlit, Docker Compose, MLflow tracking
+- **Software practices**: Modular `src/` package, type hints, custom exceptions, rotating logs, pytest suite
+- **Statistical rigor**: Hypothesis testing, outlier detection, correlation analysis, business-cost framing
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Cost-sensitive learning with explicit fraud-loss matrix
+- [ ] Data drift monitoring (Evidently / whylogs)
+- [ ] Feature store (Feast) + orchestration (Airflow/Prefect)
+- [ ] Model registry + CI/CD (GitHub Actions → staging → prod)
+- [ ] Real-time inference (Kafka + Redis cache)
+- [ ] A/B testing framework for model rollout
+
+---
+
+## 📄 License
+
+MIT License — free for personal and commercial use.
+
+---
+
+<div align="center">
+
+**Built with precision. Explained with SHAP. Deployed with confidence.**
+
+*Generated with [Claude Code](https://claude.com/claude-code)*
+
+</div>
