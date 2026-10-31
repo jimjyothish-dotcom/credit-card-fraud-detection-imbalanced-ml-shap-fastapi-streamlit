@@ -8,7 +8,7 @@
 ![XGBoost](https://img.shields.io/badge/XGBoost-EB5A27?logo=xgboost&logoColor=white)
 ![SHAP](https://img.shields.io/badge/SHAP-Explainability-009688)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+
 
 **Production-ready imbalanced binary classification with SHAP explainability, REST API & interactive dashboard**
 
